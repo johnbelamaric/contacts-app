@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: contacts
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api
+  namespace: contacts
+  labels:
+    app: contacts
+spec:
+  containers:
+  - name: api-server
+    image: johnbelamaric/contacts-api
+    imagePullPolicy: Always
+    args: [ "-dsn", "api:mypassword@tcp(mysql.db:3306)/contacts?charset=utf8&parseTime=True" ]
+    ports:
+    - containerPort: 80
+      name: http
+      protocol: TCP
