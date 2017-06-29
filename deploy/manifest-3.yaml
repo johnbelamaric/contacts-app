@@ -29,7 +29,7 @@ metadata:
   labels:
     app: contacts
 spec:
-  clusterIP: None
+  clusterIP: 10.0.0.100
   selector:
     app: contacts
   ports:
