@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-test
+  namespace: contacts
+  labels:
+    app: contacts
+spec:
+  containers:
+  - name: api-test
+    image: infoblox/dnstools
+    imagePullPolicy: Always
+    command: ["cat"]
+    stdin: true
+    volumeMounts:
+    - name: tlscerts
+      mountPath: /etc/certs
+      readOnly: true
+  volumes:
+  - name: tlscerts
+    secret:
+      secretName: tlscerts
