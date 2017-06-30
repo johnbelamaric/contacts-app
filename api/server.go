@@ -1,11 +1,12 @@
 package main
 
 import (
+        "crypto/tls"
+        "crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,7 +18,7 @@ import (
 type ContactServer struct {
 	verbose bool
 	db      *gorm.DB
-	server  *http.ServeMux
+	server  *http.Server
 }
 
 func NewContactServer(verbose bool, dsn string) (*ContactServer, error) {
@@ -34,19 +35,30 @@ func NewContactServer(verbose bool, dsn string) (*ContactServer, error) {
 	return s, nil
 }
 
-func (s *ContactServer) Serve(addr string) error {
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
-
-	s.server = http.NewServeMux()
-	s.server.HandleFunc("/contacts", func(w http.ResponseWriter, r *http.Request) {
+func (s *ContactServer) Serve(addr, certPath, keyPath, caPath string) error {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/contacts", func(w http.ResponseWriter, r *http.Request) {
 		s.handleContacts(w, r)
 	})
 
-	return http.Serve(ln, s.server)
+	s.server = &http.Server{Addr: addr, Handler: mux}
+	if certPath != "" && keyPath != "" {
+		fmt.Printf("Creating TLS config from cert %q, key %q, ca %q\n", certPath, keyPath, caPath)
+        	cfg, err := newTLSConfig(certPath, keyPath, caPath)
+		if err != nil {
+			panic(err)
+		}
+        	s.server.TLSConfig = cfg
+	}
+	
+	if s.server.TLSConfig == nil {
+		fmt.Printf("Serving HTTP on %s\n", addr);
+		return s.server.ListenAndServe()
+	} else {
+		fmt.Printf("Serving HTTPS on %s\n", addr);
+		return s.server.ListenAndServeTLS("","")
+	}
+
 }
 
 func (s *ContactServer) writeError(w http.ResponseWriter, err error) {
@@ -141,4 +153,35 @@ func (s *ContactServer) handleContactsPut(w http.ResponseWriter, r *http.Request
 
 func (s *ContactServer) handleContactsDelete(w http.ResponseWriter, r *http.Request) {
 	s.writeError(w, fmt.Errorf("Not yet implemented"))
+}
+
+func newTLSConfig(certPath, keyPath, caPath string) (*tls.Config, error) {
+        cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+        if err != nil {
+                return nil, fmt.Errorf("Could not load TLS cert: %s", err)
+        }
+
+        roots, err := loadRoots(caPath)
+        if err != nil {
+                return nil, err
+        }
+	
+        return &tls.Config{Certificates: []tls.Certificate{cert}, RootCAs: roots}, nil
+}
+
+func loadRoots(caPath string) (*x509.CertPool, error) {
+        if caPath == "" {
+                return nil, nil
+        }
+
+        roots := x509.NewCertPool()
+        pem, err := ioutil.ReadFile(caPath)
+        if err != nil {
+                return nil, fmt.Errorf("Error reading %s: %s", caPath, err)
+        }
+        ok := roots.AppendCertsFromPEM(pem)
+        if !ok {
+                return nil, fmt.Errorf("Could not read root certs: %s", err)
+        }
+        return roots, nil
 }
