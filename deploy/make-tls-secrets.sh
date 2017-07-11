@@ -32,4 +32,4 @@ data:
 EOF
 
 make_secret "tls.key" $KEY
-make_secret "tls.cert" $CERT
+make_secret "tls.crt" $CERT
