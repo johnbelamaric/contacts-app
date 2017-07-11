@@ -17,12 +17,13 @@ import (
 
 type ContactServer struct {
 	verbose bool
+	path	string
 	db      *gorm.DB
 	server  *http.Server
 }
 
-func NewContactServer(verbose bool, dsn string) (*ContactServer, error) {
-	s := &ContactServer{verbose: verbose}
+func NewContactServer(verbose bool, dsn, path string) (*ContactServer, error) {
+	s := &ContactServer{verbose: verbose, path: path}
 	db, err := gorm.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -37,7 +38,7 @@ func NewContactServer(verbose bool, dsn string) (*ContactServer, error) {
 
 func (s *ContactServer) Serve(addr, certPath, keyPath, caPath string) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/contacts", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(s.path, func(w http.ResponseWriter, r *http.Request) {
 		s.handleContacts(w, r)
 	})
 
@@ -97,10 +98,19 @@ func (s *ContactServer) handleContacts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *ContactServer) idFromPath(urlPath string) (int, error) {
+	tail := strings.TrimPrefix(strings.TrimPrefix(urlPath, s.path), "/")
+	id, err := strconv.Atoi(tail)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
 func (s *ContactServer) handleContactsGet(w http.ResponseWriter, r *http.Request) {
 	payload := make(map[string]interface{})
 
-	if r.URL.Path == "/contacts" {
+	if r.URL.Path == s.path {
 		var contacts []Contact
 		if err := s.db.Find(&contacts).Error; err != nil {
 			s.writeError(w, err)
@@ -111,10 +121,9 @@ func (s *ContactServer) handleContactsGet(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	tail := strings.TrimPrefix(r.URL.Path, "/contacts/")
-	id, err := strconv.Atoi(tail)
+	id, err := s.idFromPath(r.URL.Path)
 	if err != nil {
-		s.writeError(w, fmt.Errorf("Invalid ID %q", tail))
+		s.writeError(w, fmt.Errorf("Could not get ID from %q", r.URL.Path))
 		return
 	}
 	
@@ -152,7 +161,15 @@ func (s *ContactServer) handleContactsPut(w http.ResponseWriter, r *http.Request
 }
 
 func (s *ContactServer) handleContactsDelete(w http.ResponseWriter, r *http.Request) {
-	s.writeError(w, fmt.Errorf("Not yet implemented"))
+	id, err := s.idFromPath(r.URL.Path)
+	if err != nil {
+		s.writeError(w, fmt.Errorf("Could not get ID from %q", r.URL.Path))
+		return
+	}
+	if err:= s.db.Delete(id).Error; err != nil {
+		s.writeError(w, err)
+	}
+	return
 }
 
 func newTLSConfig(certPath, keyPath, caPath string) (*tls.Config, error) {

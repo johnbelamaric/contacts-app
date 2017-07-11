@@ -20,7 +20,7 @@ cat <<EOF
 apiVersion: v1     
 kind: Secret
 metadata:
-  name: tlscerts
+  name: ca
   namespace: contacts
 data:
 EOF
