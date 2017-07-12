@@ -55,6 +55,8 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   tls:
+  - hosts:
+    - minikube.local
   - secretName: minikube
   rules:
   - host: minikube.local
