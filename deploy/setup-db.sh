@@ -21,7 +21,7 @@ done
 
 echo "Giving the database time to initialize ($STATUS)..."
 
-sleep 5
+sleep 10
 
 echo "Configuring database..."
 
