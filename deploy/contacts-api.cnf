@@ -11,3 +11,5 @@ DNS.1 = api
 DNS.2 = api.contacts
 DNS.3 = api.contacts.svc.cluster.local
 DNS.4 = localhost
+DNS.5 = minikube
+DNS.6 = minikube.local
