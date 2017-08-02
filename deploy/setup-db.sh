@@ -26,7 +26,7 @@ do
 	REASON=$(echo $INFO | cut -d , -f 2)
 done
 
-echo $(date): Giving the database time to initialize ($STATUS)...
+echo "$(date): Giving the database time to initialize ($STATUS)..."
 
 READY="no"
 while [ "$READY" != "ready" ]
