@@ -74,7 +74,8 @@ spec:
       # hostNetwork: true
       terminationGracePeriodSeconds: 60
       containers:
-      - image: johnbelamaric/nginx-ingress-controller:0.02
+      - image: johnbelamaric/nginx-ingress-controller:0.03
+        imagePullPolicy: Always
         name: nginx-ingress-controller
         readinessProbe:
           httpGet:
@@ -105,3 +106,5 @@ spec:
         args:
         - /nginx-ingress-controller
         - --default-backend-service=$(POD_NAMESPACE)/default-http-backend
+        #- --v
+        #- "5"
