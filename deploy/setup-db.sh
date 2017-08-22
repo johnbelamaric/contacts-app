@@ -31,12 +31,12 @@ echo "$(date): Giving the database time to initialize ($STATUS)..."
 READY="no"
 while [ "$READY" != "ready" ]
 do
-	READY=$(kubectl run mysql -i --rm --image=mysql --restart=Never -- mysql -hmysql.db -uroot -proot -e "select 'ready'" | grep ready | uniq)
+	READY=$(kubectl run mysql -i --rm --image=mysql:5.6 --restart=Never -- mysql -hmysql.db -uroot -proot -e "select 'ready'" | grep ready | uniq)
 	echo "$(date): Waiting for the database to be initialized..."
 	sleep 5
 done
 
 echo "$(date): Configuring database..."
 
-kubectl run mysql -i --rm --image=mysql --restart=Never -- mysql -hmysql.db -uroot -proot -e "create database contacts"
-kubectl run mysql -i --rm --image=mysql --restart=Never -- mysql -hmysql.db -uroot -proot -e "grant all on contacts.* to 'api'@'%' identified by 'mypassword'"
+kubectl run mysql -i --rm --image=mysql:5.6 --restart=Never -- mysql -hmysql.db -uroot -proot -e "create database contacts"
+kubectl run mysql -i --rm --image=mysql:5.6 --restart=Never -- mysql -hmysql.db -uroot -proot -e "grant all on contacts.* to 'api'@'%' identified by 'mypassword'"
